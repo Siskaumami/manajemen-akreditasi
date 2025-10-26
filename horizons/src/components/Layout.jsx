@@ -41,7 +41,7 @@ const Layout = ({ children }) => {
               >
                 {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
-              <span className="ml-2 text-xl font-bold text-blue-600">Sistem Akreditasi</span>
+              <span className="ml-2 text-xl font-bold text-blue-600">Sistem Informasi Administrasi Publik(Si-APIK)</span>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right hidden sm:block">

@@ -19,7 +19,7 @@ const Help = () => {
   const faqs = [
     {
       question: 'Bagaimana cara mengunggah dokumen?',
-      answer: 'Klik tombol "Upload Dokumen" di halaman Manajemen Dokumen, pilih kategori standar, lalu pilih file yang ingin diunggah.'
+      answer: 'Klik pada menu sesuai dengan dokumen yang akan di unggah, klik upload dokumen, lalu pilih file yang akan diunggah.'
     },
     {
       question: 'Format file apa saja yang didukung?',
@@ -52,7 +52,7 @@ const Help = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+            className="bg-white rounded-xl border border-gray-200 p-6 shadow-[0_6px_18px_rgba(59,130,246,0.12)] hover:shadow-[0_8px_22px_rgba(59,130,246,0.18)] transition-shadow"
           >
             <Mail className="w-10 h-10 text-blue-600 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Email</h3>
@@ -66,7 +66,7 @@ const Help = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+            className="bg-white rounded-xl border border-gray-200 p-6 shadow-[0_6px_18px_rgba(59,130,246,0.12)] hover:shadow-[0_8px_22px_rgba(59,130,246,0.18)] transition-shadow"
           >
             <Phone className="w-10 h-10 text-green-600 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Telepon</h3>
@@ -80,7 +80,7 @@ const Help = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+            className="bg-white rounded-xl border border-gray-200 p-6 shadow-[0_6px_18px_rgba(59,130,246,0.12)] hover:shadow-[0_8px_22px_rgba(59,130,246,0.18)] transition-shadow"
           >
             <MessageCircle className="w-10 h-10 text-purple-600 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Live Chat</h3>
@@ -91,7 +91,7 @@ const Help = () => {
           </motion.div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-[0_6px_18px_rgba(59,130,246,0.12)]">
           <div className="flex items-center gap-3 mb-6">
             <Book className="w-6 h-6 text-blue-600" />
             <h2 className="text-2xl font-bold text-gray-900">Pertanyaan Umum (FAQ)</h2>

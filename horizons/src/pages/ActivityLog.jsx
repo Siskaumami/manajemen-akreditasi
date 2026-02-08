@@ -47,7 +47,7 @@ const ActivityLog = () => {
           <p className="text-gray-600 mt-2">Pantau semua aktivitas sistem</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-[0_6px_18px_rgba(59,130,246,0.12)]">
           <div className="divide-y divide-gray-200">
             {activities.length === 0 ? (
               <div className="p-8 text-center text-gray-500">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload } from 'lucide-react';
 import {
   Dialog,
@@ -9,17 +9,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 
-const UploadDialog = ({ open, onOpenChange, onUpload }) => {
+const API_BASE = 'http://localhost:5000';
+
+const UploadDialog = ({ open, onOpenChange, onUpload, fixedCategory = null }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [category, setCategory] = useState('');
@@ -41,11 +36,21 @@ const UploadDialog = ({ open, onOpenChange, onUpload }) => {
     { value: 'std11', label: 'Standar 11: Penjaminan Mutu' },
   ];
 
-  // 🚀 Upload langsung ke server (Google Drive API)
+  useEffect(() => {
+    if (fixedCategory) setCategory(fixedCategory);
+    // reset file seeverytime dialog opened
+    if (open) setFile(null);
+  }, [fixedCategory, open]);
+
+  const selectedCategory = fixedCategory || category;
+  const selectedCategoryLabel =
+    categories.find((cat) => cat.value === selectedCategory)?.label || '';
+
+  // ✅ Upload ke backend lokal + simpan ke DB (bukan Google Drive)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!file || !category) {
+    if (!file || !selectedCategory) {
       toast({
         title: 'Error',
         description: 'Mohon lengkapi semua field sebelum upload.',
@@ -56,52 +61,61 @@ const UploadDialog = ({ open, onOpenChange, onUpload }) => {
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('category', selectedCategory);
+    formData.append('uploader', user?.name || 'Anonim');
 
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:5000/api/upload', {
+
+      const res = await fetch(`${API_BASE}/api/documents`, {
         method: 'POST',
         body: formData,
       });
 
-      const data = await res.json();
+      const result = await res.json();
       setLoading(false);
 
-      if (data.success) {
-        const newDoc = {
-          id: Date.now().toString(),
-          fileName: data.name || file.name,
-          fileType: file.name.split('.').pop().toUpperCase(),
-          category,
-          uploader: user?.name || 'Anonim',
-          uploadDate: new Date().toISOString(),
-          status: 'pending',
-          driveId: data.fileId,
-          driveViewLink: data.viewLink,
-        };
-
-        onUpload(newDoc);
-        toast({
-          title: 'Upload Berhasil 🎉',
-          description: `File "${data.name}" berhasil diunggah ke Google Drive.`,
-        });
-        setFile(null);
-        setCategory('');
-        onOpenChange(false);
-      } else {
+      if (!res.ok || !result?.success) {
         toast({
           title: 'Gagal Upload 😢',
-          description: data.error || 'Terjadi kesalahan saat upload file.',
+          description: result?.error || result?.message || 'Terjadi kesalahan saat upload file.',
           variant: 'destructive',
         });
+        return;
       }
+
+      // backend mengembalikan data dokumen tersimpan (id dari DB, filePath, dst)
+      const saved = result.data;
+
+      // pastikan bentuk data sesuai table kamu
+      const newDoc = {
+        id: saved.id,
+        fileName: saved.fileName,
+        fileType: saved.fileType,
+        category: saved.category,
+        uploader: saved.uploader,
+        uploadDate: saved.uploadDate,
+        status: saved.status,
+        filePath: saved.filePath, // path lokal: /uploads/xxxx.ext
+        fileUrl: `${API_BASE}${saved.filePath}`, // url untuk akses file
+      };
+
+      onUpload(newDoc);
+
+      toast({
+        title: 'Upload Berhasil 🎉',
+        description: `File "${saved.fileName}" berhasil tersimpan di server.`,
+      });
+
+      setFile(null);
+      setCategory(fixedCategory || '');
+      onOpenChange(false);
     } catch (error) {
       console.error('Error upload:', error);
       setLoading(false);
       toast({
         title: 'Kesalahan Server ⚠️',
-        description:
-          'Tidak dapat terhubung ke server. Pastikan backend berjalan di port 5000.',
+        description: 'Tidak dapat terhubung ke server. Pastikan backend berjalan di port 5000.',
         variant: 'destructive',
       });
     }
@@ -113,26 +127,33 @@ const UploadDialog = ({ open, onOpenChange, onUpload }) => {
         <DialogHeader>
           <DialogTitle>Upload Dokumen</DialogTitle>
           <DialogDescription>
-            Upload dokumen akreditasi (PDF, DOCX, XLSX, ZIP) langsung ke Google
-            Drive.
+            Upload dokumen akreditasi (PDF, DOCX, XLSX, ZIP) dan simpan ke server.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="category">Kategori Standar</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih kategori" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
+            <select
+              id="category"
+              value={selectedCategory}
+              onChange={(e) => setCategory(e.target.value)}
+              disabled={Boolean(fixedCategory)}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="" disabled>
+                Pilih kategori
+              </option>
+              {fixedCategory ? (
+                <option value={selectedCategory}>{selectedCategoryLabel}</option>
+              ) : (
+                categories.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
                     {cat.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </option>
+                ))
+              )}
+            </select>
           </div>
 
           <div className="space-y-2">
@@ -142,7 +163,7 @@ const UploadDialog = ({ open, onOpenChange, onUpload }) => {
                 id="file"
                 type="file"
                 accept=".pdf,.docx,.xlsx,.zip"
-                onChange={(e) => setFile(e.target.files[0])}
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
                 className="hidden"
               />
               <label htmlFor="file" className="cursor-pointer">
@@ -151,7 +172,7 @@ const UploadDialog = ({ open, onOpenChange, onUpload }) => {
                   {file ? file.name : 'Klik untuk memilih file'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  PDF, DOCX, XLSX, ZIP (tanpa batas ukuran)
+                  PDF, DOCX, XLSX, ZIP
                 </p>
               </label>
             </div>
@@ -166,12 +187,8 @@ const UploadDialog = ({ open, onOpenChange, onUpload }) => {
             >
               Batal
             </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={loading}
-            >
-              {loading ? 'Mengunggah...' : 'Upload ke Google Drive 🚀'}
+            <Button type="submit" className="flex-1" disabled={loading}>
+              {loading ? 'Mengunggah...' : 'Upload 🚀'}
             </Button>
           </div>
         </form>

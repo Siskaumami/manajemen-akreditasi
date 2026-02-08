@@ -6,7 +6,6 @@ import { UserPlus, Mail, Lock, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -14,29 +13,44 @@ const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
   const { toast } = useToast();
+
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    role: 'user'
+    role: 'user', // default user
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = register(formData);
-    
-    if (result.success) {
+
+    setLoading(true);
+    try {
+      const result = await register(formData);
+
+      if (result?.success) {
+        toast({
+          title: 'Registrasi Berhasil!',
+          description: 'Akun Anda telah dibuat. Selamat datang!',
+        });
+        navigate('/dashboard');
+      } else {
+        toast({
+          title: 'Registrasi Gagal',
+          description: result?.error || 'Terjadi kesalahan saat registrasi.',
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('REGISTER ERROR:', err);
       toast({
-        title: "Registrasi Berhasil!",
-        description: "Akun Anda telah dibuat. Selamat datang!",
+        title: 'Registrasi Error',
+        description: err?.message || 'Terjadi error di sisi aplikasi.',
+        variant: 'destructive',
       });
-      navigate('/dashboard');
-    } else {
-      toast({
-        title: "Registrasi Gagal",
-        description: result.error,
-        variant: "destructive"
-      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -46,6 +60,7 @@ const Register = () => {
         <title>Registrasi - Sistem Manajemen Akreditasi</title>
         <meta name="description" content="Daftar akun baru untuk sistem manajemen akreditasi" />
       </Helmet>
+
       <div className="min-h-screen flex items-center justify-center p-4 bg-gray-100">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -72,7 +87,7 @@ const Register = () => {
                     placeholder="Nama Anda"
                     className="pl-10"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
                     required
                   />
                 </div>
@@ -88,7 +103,7 @@ const Register = () => {
                     placeholder="nama@email.com"
                     className="pl-10"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
                     required
                   />
                 </div>
@@ -104,34 +119,35 @@ const Register = () => {
                     placeholder="••••••••"
                     className="pl-10"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
                     required
                   />
                 </div>
               </div>
 
+              {/* ✅ INI YANG DIPERBAIKI: pakai select native biar pasti bisa pilih */}
               <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="user">User</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="role">Peran</Label>
+                <select
+                  id="role"
+                  value={formData.role}
+                  onChange={(e) => setFormData((p) => ({ ...p, role: e.target.value }))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value="user">Pengguna</option>
+                  <option value="admin">Admin</option>
+                </select>
               </div>
 
-              <Button type="submit" className="w-full">
-                Daftar
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Memproses...' : 'Daftar'}
               </Button>
             </form>
 
             <p className="text-center mt-6 text-sm text-gray-600">
               Sudah punya akun?{' '}
               <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
-                Login di sini
+                Masuk ke sini
               </Link>
             </p>
           </div>

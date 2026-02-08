@@ -1,13 +1,20 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 const AuthContext = createContext(null);
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+};
+
+const safeJsonParse = (value, fallback) => {
+  try {
+    if (!value) return fallback;
+    return JSON.parse(value);
+  } catch {
+    return fallback;
   }
-  return context;
 };
 
 export const AuthProvider = ({ children }) => {
@@ -15,63 +22,65 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    const storedUser = safeJsonParse(localStorage.getItem('user'), null);
+    if (storedUser) setUser(storedUser);
     setLoading(false);
   }, []);
 
   const login = (email, password) => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const foundUser = users.find(u => u.email === email && u.password === password);
-    
-    if (foundUser) {
-      const userWithoutPassword = { ...foundUser };
-      delete userWithoutPassword.password;
-      setUser(userWithoutPassword);
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-      return { success: true };
-    }
-    return { success: false, error: 'Email atau password salah' };
+    const users = safeJsonParse(localStorage.getItem('users'), []);
+    const foundUser = users.find((u) => u.email === email && u.password === password);
+
+    if (!foundUser) return { success: false, error: 'Email atau password salah' };
+
+    const userWithoutPassword = { ...foundUser };
+    delete userWithoutPassword.password;
+
+    setUser(userWithoutPassword);
+    localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+    return { success: true, user: userWithoutPassword };
   };
 
   const register = (userData) => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    
-    if (users.find(u => u.email === userData.email)) {
+    const users = safeJsonParse(localStorage.getItem('users'), []);
+
+    const role = userData.role === 'admin' || userData.role === 'user' ? userData.role : 'user';
+
+    if (users.find((u) => u.email === userData.email)) {
       return { success: false, error: 'Email sudah terdaftar' };
     }
 
     const newUser = {
       id: Date.now().toString(),
-      ...userData,
-      createdAt: new Date().toISOString()
+      name: userData.name,
+      email: userData.email,
+      password: userData.password,
+      role,
+      createdAt: new Date().toISOString(),
     };
 
     users.push(newUser);
     localStorage.setItem('users', JSON.stringify(users));
-    
+
     const userWithoutPassword = { ...newUser };
     delete userWithoutPassword.password;
+
     setUser(userWithoutPassword);
     localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-    
-    return { success: true };
+
+    return { success: true, user: userWithoutPassword };
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    return { success: true };
   };
 
-  if (loading) {
-    return null;
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ user, loading, login, register, logout }),
+    [user, loading]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

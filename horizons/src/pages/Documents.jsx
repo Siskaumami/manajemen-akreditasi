@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
+import { useParams } from 'react-router-dom';
 import { Upload, Search, Filter } from 'lucide-react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -10,14 +11,29 @@ import UploadDialog from '@/components/documents/UploadDialog';
 import FilterDialog from '@/components/documents/FilterDialog';
 
 const Documents = () => {
+  const { category: categoryParam } = useParams();
+  const categories = [
+    'fed',
+    'std1',
+    'std2',
+    'std3',
+    'std4',
+    'std5',
+    'std6',
+    'std7',
+    'std8',
+    'std9',
+    'std10',
+    'std11',
+  ];
+  const lockedCategory = categories.includes(categoryParam) ? categoryParam : null;
   const [documents, setDocuments] = useState([]);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [uploadOpen, setUploadOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState({
-    category: 'all',
-    status: 'all'
+    status: 'all',
   });
 
   useEffect(() => {
@@ -26,7 +42,7 @@ const Documents = () => {
 
   useEffect(() => {
     filterDocuments();
-  }, [documents, searchQuery, filters]);
+  }, [documents, searchQuery, filters, lockedCategory]);
 
   const loadDocuments = () => {
     const stored = JSON.parse(localStorage.getItem('documents') || '[]');
@@ -43,8 +59,8 @@ const Documents = () => {
       );
     }
 
-    if (filters.category !== 'all') {
-      filtered = filtered.filter(doc => doc.category === filters.category);
+    if (lockedCategory) {
+      filtered = filtered.filter(doc => doc.category === lockedCategory);
     }
 
     if (filters.status !== 'all') {
@@ -84,6 +100,24 @@ const Documents = () => {
     setDocuments(updatedDocs);
   };
 
+  const pageDescriptions = {
+    fed: 'Kelola Dokumen Formulir Evaluasi Diri',
+    std1: 'Kelola Dokumen Kompetensi Lulusan',
+    std2: 'Kelola Dokumen Proses Pembelajaran',
+    std3: 'Kelola Dokumen Penilaian Pembelajaran',
+    std4: 'Kelola Dokumen Pengelolaan',
+    std5: 'Kelola Dokumen Isi',
+    std6: 'Kelola Dokumen Dosen dan Tenaga Kependidikan',
+    std7: 'Kelola Dokumen Sarana dan Prasarana',
+    std8: 'Kelola Dokumen Biaya',
+    std9: 'Kelola Dokumen Penelitian',
+    std10: 'Kelola Dokumen Pengabdian pada Masyarakat',
+    std11: 'Kelola Dokumen Penjaminan Mutu',
+  };
+  const pageDescription = lockedCategory
+    ? pageDescriptions[lockedCategory]
+    : 'Kelola semua dokumen akreditasi';
+
   return (
     <Layout>
       <Helmet>
@@ -95,7 +129,7 @@ const Documents = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Manajemen Dokumen</h1>
-            <p className="text-gray-600 mt-2">Kelola semua dokumen akreditasi</p>
+            <p className="text-gray-600 mt-2">{pageDescription}</p>
           </div>
           <Button onClick={() => setUploadOpen(true)} className="gap-2">
             <Upload className="w-4 h-4" />
@@ -135,6 +169,7 @@ const Documents = () => {
         open={uploadOpen}
         onOpenChange={setUploadOpen}
         onUpload={handleUpload}
+        fixedCategory={lockedCategory}
       />
 
       <FilterDialog
